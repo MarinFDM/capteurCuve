@@ -1,0 +1,23 @@
+# ESPHome secrets avec vraies valeurs — ne jamais committer
+esphome/secrets.yaml
+
+# ESPHome build cache
+esphome/.esphome/
+esphome/build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

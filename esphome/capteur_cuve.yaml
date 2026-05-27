@@ -1,0 +1,158 @@
+# =============================================================================
+# ESPHome — Jauge de cuve à eau
+# Matériel : ESP32 + JSN-SR04T/AJ-SR04M + level shifter 3.3V↔5V
+# =============================================================================
+#
+# Paramètres d'étalonnage à adapter après mesures réelles (Phase 1) :
+#
+#   DIST_VIDE_M   : distance capteur → surface quand la cuve est VIDE
+#                   = hauteur de montage du capteur au-dessus du fond
+#                   Valeur de départ : 1.393 m (à affiner sur site)
+#
+#   DIST_PLEIN_M  : distance capteur → surface quand la cuve est PLEINE
+#                   = hauteur capteur - hauteur d'eau maximale
+#                   ⚠ Contrainte zone aveugle JSN-SR04T/AJ-SR04M : ~20-25 cm minimum
+#                   Le capteur ne peut pas mesurer fiablement en dessous de 20 cm.
+#                   Valeur de départ : 0.200 m (à affiner sur site, ne pas descendre
+#                   sous 0.20 m sans vérification du module)
+#
+#   VOLUME_MAX_L  : volume réel fourni par l'utilisateur = 3 000 L
+#                   Note : les dimensions géométriques (224×140×153.3 cm) donneraient
+#                   ~4 807 L. VOLUME_MAX_L doit correspondre à la mesure physique réelle
+#                   (cuve non remplie au max géométrique, ou forme réelle différente).
+#
+# Cuve rectangulaire : H=153.3 cm, L=224 cm, l=140 cm
+# Capteur monté à 139.3 cm au-dessus du fond de la cuve
+# =============================================================================
+
+substitutions:
+  # --- Étalonnage (modifier ces valeurs après mesures terrain) ---
+  DIST_VIDE_M:    "1.393"   # [m] distance capteur→eau, cuve vide
+  DIST_PLEIN_M:   "0.200"   # [m] distance capteur→eau, cuve pleine
+                             # ⚠ Zone aveugle JSN-SR04T : ~20-25 cm min — ne pas descendre sous 0.20 m
+  VOLUME_MAX_L:   "3000"    # [L] volume réel de la cuve (fourni par l'utilisateur)
+                             # Note : dimensions géom. donneraient ~4807 L — utiliser la valeur mesurée
+  SEUIL_ALERTE_L: "300"     # [L] seuil alerte bas niveau (10 % de 3 000 L)
+
+  # --- Pins GPIO (level shifter côté LV → ESP32 3.3 V) ---
+  # ⚠ Note : GPIO différents de la Phase 1 MicroPython (qui utilisait GPIO23/GPIO22)
+  # Vérifiez votre câblage avant de flasher.
+  PIN_TRIG: GPIO13
+  PIN_ECHO: GPIO12
+
+  # --- Identification du nœud ---
+  node_name: capteur-cuve
+  friendly_name: "Capteur Cuve à Eau"
+
+esphome:
+  name: ${node_name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# --------------------------------------------------------------------------- #
+# Connectivité
+# --------------------------------------------------------------------------- #
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: !secret ap_password
+
+captive_portal:
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+# --------------------------------------------------------------------------- #
+# Capteur ultrason JSN-SR04T / AJ-SR04M
+# --------------------------------------------------------------------------- #
+sensor:
+  # 1. Distance brute — filtre médiane pour éliminer les faux échos
+  - platform: ultrasonic
+    trigger_pin: ${PIN_TRIG}
+    echo_pin: ${PIN_ECHO}
+    name: "Distance Brute"
+    id: distance_brute
+    unit_of_measurement: "m"
+    icon: mdi:ruler
+    device_class: distance
+    state_class: measurement
+    accuracy_decimals: 3
+    update_interval: 5s
+    pulse_time: 10us
+    # timeout : durée max d'attente de l'écho, pas une distance
+    # Pour 3 m : aller-retour = 6 m, à 340 m/s → ~17.6 ms → arrondi à 20 ms
+    timeout: 20ms
+    filters:
+      - median:
+          window_size: 7
+          send_every: 1    # publie à chaque mesure médiane pour réactivité maximale
+          send_first_at: 3
+      - filter_out: nan
+      # Rejette les valeurs dans la zone aveugle du capteur (<20 cm)
+      - lambda: "return (x < 0.20f) ? NAN : x;"
+      - filter_out: nan   # capture les NAN produits par la lambda ci-dessus
+
+  # 2. Niveau d'eau en %
+  - platform: template
+    name: "Niveau Eau"
+    id: niveau_eau
+    unit_of_measurement: "%"
+    icon: mdi:water-percent
+    state_class: measurement
+    accuracy_decimals: 1
+    update_interval: 5s
+    lambda: |-
+      float dist_vide  = ${DIST_VIDE_M};
+      float dist_plein = ${DIST_PLEIN_M};
+      float dist       = id(distance_brute).state;
+      if (isnan(dist)) return {};
+      float niveau = (dist_vide - dist) / (dist_vide - dist_plein) * 100.0f;
+      if (niveau < 0.0f)   niveau = 0.0f;
+      if (niveau > 100.0f) niveau = 100.0f;
+      return niveau;
+
+  # 3. Volume d'eau en litres
+  - platform: template
+    name: "Volume Eau"
+    id: volume_eau
+    unit_of_measurement: "L"
+    icon: mdi:water
+    device_class: volume_storage
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: 5s
+    lambda: |-
+      float niv = id(niveau_eau).state;
+      if (isnan(niv)) return {};
+      return niv / 100.0f * ${VOLUME_MAX_L};
+
+# --------------------------------------------------------------------------- #
+# Alerte bas niveau
+# --------------------------------------------------------------------------- #
+binary_sensor:
+  - platform: template
+    name: "Alerte Bas Niveau"
+    id: alerte_bas_niveau
+    device_class: problem
+    icon: mdi:water-alert
+    lambda: |-
+      float vol = id(volume_eau).state;
+      if (isnan(vol)) return false;
+      return vol < ${SEUIL_ALERTE_L};
+    filters:
+      # Anti-chattering : attend 30 s de condition vraie avant de déclencher
+      - delayed_on: 30s
