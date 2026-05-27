@@ -1,5 +1,5 @@
-# ESPHome secrets avec vraies valeurs — utiliser secrets.local.yaml
-esphome/secrets.local.yaml
+# ESPHome secrets avec vraies valeurs — ne jamais committer
+esphome/secrets.yaml
 
 # ESPHome build cache
 esphome/.esphome/
