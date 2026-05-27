@@ -36,9 +36,12 @@ substitutions:
 
   # --- Pins GPIO (level shifter côté LV → ESP32 3.3 V) ---
   # ⚠ Note : GPIO différents de la Phase 1 MicroPython (qui utilisait GPIO23/GPIO22)
+  # GPIO16/17 choisis pour éviter les strapping pins (GPIO12 est un strapping pin sur ESP32)
+  # GPIO16/17 : libres sur ESP32-WROOM-32 (sans PSRAM)
+  # ⚠ Ne pas utiliser sur ESP32-WROVER (GPIO16/17 = PSRAM CS/CLK)
   # Vérifiez votre câblage avant de flasher.
-  PIN_TRIG: GPIO13
-  PIN_ECHO: GPIO12
+  PIN_TRIG: GPIO17
+  PIN_ECHO: GPIO16
 
   # --- Identification du nœud ---
   node_name: capteur-cuve
@@ -93,14 +96,14 @@ sensor:
     accuracy_decimals: 3
     update_interval: 5s
     pulse_time: 10us
-    # timeout : durée max d'attente de l'écho, pas une distance
-    # Pour 3 m : aller-retour = 6 m, à 340 m/s → ~17.6 ms → arrondi à 20 ms
-    timeout: 20ms
+    # timeout : distance maximale de détection (ESPHome attend une distance, pas une durée)
+    # 2 m couvre la plage utile capteur→surface (DIST_PLEIN_M à DIST_VIDE_M)
+    timeout: 2m
     filters:
       - median:
           window_size: 7
           send_every: 1    # publie à chaque mesure médiane pour réactivité maximale
-          send_first_at: 3
+          send_first_at: 1  # doit être <= send_every
       - filter_out: nan
       # Rejette les valeurs dans la zone aveugle du capteur (<20 cm)
       - lambda: "return (x < 0.20f) ? NAN : x;"
