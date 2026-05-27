@@ -1,0 +1,23 @@
+# ESPHome secrets avec vraies valeurs — utiliser secrets.local.yaml
+esphome/secrets.local.yaml
+
+# ESPHome build cache
+esphome/.esphome/
+esphome/build/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
