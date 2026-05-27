@@ -102,9 +102,9 @@ sensor:
           send_every: 1    # publie à chaque mesure médiane pour réactivité maximale
           send_first_at: 3
       - filter_out: nan
-      - filter_out: 0.0
       # Rejette les valeurs dans la zone aveugle du capteur (<20 cm)
       - lambda: "return (x < 0.20f) ? NAN : x;"
+      - filter_out: nan   # capture les NAN produits par la lambda ci-dessus
 
   # 2. Niveau d'eau en %
   - platform: template
