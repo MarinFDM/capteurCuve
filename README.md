@@ -67,6 +67,11 @@ cp esphome/secrets.yaml.example esphome/secrets.yaml
 > ⚠️ `esphome/secrets.yaml` est dans `.gitignore` — ce fichier avec vos vraies valeurs
 > ne sera jamais commité. Ne commitez jamais de mots de passe ou clés API.
 
+> **IP statique recommandée** : Si ESPHome tourne dans Docker, le mDNS (`.local`)
+> ne fonctionne pas toujours. Configurez `STATIC_IP`, `GATEWAY` et `SUBNET` dans
+> les substitutions de `capteur_cuve.yaml` avant de flasher. L'IP choisie doit être
+> libre sur votre réseau.
+
 ### 2. Adapter les paramètres d'étalonnage
 
 Ouvrir `esphome/capteur_cuve.yaml` et modifier les `substitutions` :

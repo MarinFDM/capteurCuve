@@ -43,6 +43,11 @@ substitutions:
   PIN_TRIG: GPIO17
   PIN_ECHO: GPIO16
 
+  # --- Réseau — IP statique (recommandé avec ESPHome dans Docker, mDNS peu fiable) ---
+  STATIC_IP: "192.168.1.99"     # ← À adapter à votre réseau
+  GATEWAY:   "192.168.1.1"      # ← Passerelle de votre box
+  SUBNET:    "255.255.255.0"
+
   # --- Identification du nœud ---
   node_name: capteur-cuve
   friendly_name: "Capteur Cuve à Eau"
@@ -62,6 +67,10 @@ esp32:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  manual_ip:
+    static_ip: ${STATIC_IP}
+    gateway: ${GATEWAY}
+    subnet: ${SUBNET}
   ap:
     ssid: "${friendly_name} Fallback"
     password: !secret ap_password
