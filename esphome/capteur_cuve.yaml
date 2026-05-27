@@ -37,6 +37,8 @@ substitutions:
   # --- Pins GPIO (level shifter côté LV → ESP32 3.3 V) ---
   # ⚠ Note : GPIO différents de la Phase 1 MicroPython (qui utilisait GPIO23/GPIO22)
   # GPIO16/17 choisis pour éviter les strapping pins (GPIO12 est un strapping pin sur ESP32)
+  # GPIO16/17 : libres sur ESP32-WROOM-32 (sans PSRAM)
+  # ⚠ Ne pas utiliser sur ESP32-WROVER (GPIO16/17 = PSRAM CS/CLK)
   # Vérifiez votre câblage avant de flasher.
   PIN_TRIG: GPIO17
   PIN_ECHO: GPIO16
