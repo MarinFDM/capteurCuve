@@ -142,7 +142,8 @@ sensor:
       float dist_plein = ${DIST_PLEIN_M};
       float dist       = id(distance_brute).state;
       
-      if (isnan(dist)) return {};
+      // Propage l'indisponibilité : si distance_brute est unavailable, niveau_eau aussi
+      if (isnan(dist)) return NAN;
       
       // Calcul niveau : 0% = vide (dist_vide), 100% = plein (dist_plein)
       float niveau = (dist_vide - dist) / (dist_vide - dist_plein) * 100.0f;
@@ -165,7 +166,8 @@ sensor:
     update_interval: 5s
     lambda: |-
       float niv = id(niveau_eau).state;
-      if (isnan(niv)) return {};
+      // Propage l'indisponibilité : si niveau_eau est unavailable, volume_eau aussi
+      if (isnan(niv)) return NAN;
       return niv / 100.0f * ${VOLUME_MAX_L};
 
 # -----------------------------------------------------------------------------
