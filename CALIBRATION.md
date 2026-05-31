@@ -64,11 +64,11 @@ Si ce n'est pas déjà fait :
 
 4. **Vérifier les GPIO** dans le script :
    ```python
-   PIN_TRIG = 23   # ⚠️ Vérifier que cela correspond à votre câblage
-   PIN_ECHO = 22   # ⚠️ Vérifier que cela correspond à votre câblage
+   PIN_TRIG = 23   # GPIO23 (Trig)
+   PIN_ECHO = 22   # GPIO22 (Echo)
    ```
-   > **Note :** Le script Phase 1 utilise GPIO23/GPIO22 par défaut.  
-   > Si vous avez déjà câblé pour la Phase 2 ESPHome (GPIO17/GPIO16), adaptez ces valeurs dans le script.
+   > **Note :** Ces GPIO (23/22) sont les mêmes pour Phase 1 et Phase 2.  
+   > Pas de recâblage nécessaire entre les phases.
 
 5. **Exécuter** (F5 ou bouton ▶️)
 

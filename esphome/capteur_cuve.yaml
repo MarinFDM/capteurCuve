@@ -42,11 +42,11 @@ substitutions:
   SEUIL_ALERTE_L: "300"     # [L] Seuil alerte bas niveau (10% de 3000 L)
   
   # --- Pins GPIO ESP32 (level shifter côté LV → ESP32 3.3V) ---
-  # ⚠️ Ces GPIO sont différents du script Phase 1 MicroPython (GPIO23/GPIO22)
-  # GPIO16/GPIO17 : libres sur ESP32-WROOM-32 standard
-  # ⚠️ NE PAS utiliser sur ESP32-WROVER (GPIO16/17 = PSRAM)
-  PIN_TRIG: GPIO17
-  PIN_ECHO: GPIO16
+  # GPIO23/GPIO22 : validés en Phase 1 MicroPython
+  # Ces GPIO sont libres sur ESP32-WROOM-32 standard et ESP32-WROVER
+  # ⚠️ Si vous avez câblé différemment, adaptez ces valeurs
+  PIN_TRIG: GPIO23
+  PIN_ECHO: GPIO22
 
 # =============================================================================
 # Configuration ESPHome
@@ -114,10 +114,16 @@ sensor:
           window_size: 7
           send_every: 1      # Publie à chaque nouvelle médiane
           send_first_at: 1
-      - filter_out: nan
-      # Rejette les valeurs dans la zone aveugle (<20 cm)
-      - lambda: "return (x < 0.20f) ? NAN : x;"
-      - filter_out: nan
+      # Timeout : marque comme unavailable si aucune mesure valide pendant 60s
+      - timeout:
+          timeout: 60s
+          value: !lambda "return NAN;"
+      # Rejette les valeurs dans la zone aveugle (<20 cm) sans masquer l'indisponibilité
+      # Si la mesure est < 20 cm, on considère que c'est un écho parasite (pas une panne)
+      - clamp:
+          min_value: 0.20
+          max_value: 4.00
+          ignore_out_of_range: true
 
   # ---- 2. Niveau d'eau (%) ----
   - platform: template

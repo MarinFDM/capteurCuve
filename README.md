@@ -21,18 +21,17 @@ ESP32               Level Shifter          AJ-SR04M
 ─────               ─────────────          ────────
 3.3V    ──────────► LV
                     
-GPIO17  ──────────► LV1 ────► HV1 ──────► Trig
-GPIO16  ◄──────────  LV2 ◄──── HV2 ◄────── Echo
+GPIO23  ──────────► LV1 ────► HV1 ──────► Trig
+GPIO22  ◄──────────  LV2 ◄──── HV2 ◄────── Echo
 
 GND     ──────────────────────────────────► GND
 
 5V      ──────────► HV ────────────────────► 5V (VCC)
 ```
 
-> **⚠️ Note GPIO Phase 1 vs Phase 2**  
-> Le script MicroPython de test (Phase 1) utilisait **GPIO23** (Trig) et **GPIO22** (Echo).  
-> La configuration ESPHome (Phase 2) utilise **GPIO17** (Trig) et **GPIO16** (Echo).  
-> **Vérifiez et adaptez votre câblage avant de flasher !**
+> **✅ GPIO Phase 1 et Phase 2**  
+> Les mêmes GPIO sont utilisés en Phase 1 (test MicroPython) et Phase 2 (ESPHome) : **GPIO23** (Trig) et **GPIO22** (Echo).  
+> **Pas de recâblage nécessaire entre les deux phases.**
 
 ---
 
@@ -57,11 +56,9 @@ GND     ────────────────────────
 | Paramètre | Valeur |
 |-----------|--------|
 | **Forme** | Rectangulaire |
-| **Dimensions** (L × l × H) | 224 cm × 140 cm × 153.3 cm |
-| **Volume utilisable** | **3 000 L** (valeur réelle fournie) |
-| **Volume géométrique théorique** | ~4 807 L (dimensions × 100%) |
+| **Volume utilisable** | **3 000 L** (valeur fournie par l'utilisateur) |
 
-> **Note :** Le volume configuré dans ESPHome (`VOLUME_MAX_L = 3000`) correspond au volume **réel utilisable** de la cuve, pas au volume géométrique théorique.
+> **Note :** Le volume configuré dans ESPHome (`VOLUME_MAX_L = 3000`) correspond au volume **réel utilisable** de la cuve tel que fourni par l'utilisateur.
 
 ---
 
@@ -139,7 +136,7 @@ wifi_ssid: "VotreSSID"
 wifi_password: "VotreMotDePasseWiFi"
 ap_password: "motdepasseAP"         # Pour le point d'accès de secours
 ota_password: "motdepasseOTA"       # Générer avec secrets.token_hex(16)
-api_encryption_key: "cléBase64=="   # Générer avec ESPHome ou secrets.token_bytes(32)
+api_encryption_key: "cléBase64=="   # Générer avec la commande fournie dans le template
 ```
 
 > **🔒 Sécurité :** `secrets.yaml` est dans `.gitignore` — **ne le commitez jamais**.
@@ -157,9 +154,9 @@ substitutions:
   VOLUME_MAX_L:   "3000"    # Volume réel utilisable de la cuve (litres)
   SEUIL_ALERTE_L: "300"     # Seuil alerte bas niveau (10% de VOLUME_MAX_L)
   
-  # GPIO ESP32 (vérifier votre câblage !)
-  PIN_TRIG: GPIO17
-  PIN_ECHO: GPIO16
+  # GPIO ESP32 (validés en Phase 1)
+  PIN_TRIG: GPIO23
+  PIN_ECHO: GPIO22
 ```
 
 **Formules de calcul :**
@@ -250,7 +247,7 @@ entities:
 
 ## 🧪 Dépannage
 
-### Problème : Distance affichée = 0 ou NaN
+### Problème : Distance affichée = 0 ou unavailable
 
 **Causes possibles :**
 - Câblage incorrect (vérifier level shifter, Trig/Echo inversés)
