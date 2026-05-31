@@ -114,16 +114,19 @@ sensor:
           window_size: 7
           send_every: 1      # Publie à chaque nouvelle médiane
           send_first_at: 1
-      # Timeout : marque comme unavailable si aucune mesure valide pendant 60s
-      - timeout:
-          timeout: 60s
-          value: !lambda "return NAN;"
-      # Rejette les valeurs dans la zone aveugle (<20 cm) sans masquer l'indisponibilité
-      # Si la mesure est < 20 cm, on considère que c'est un écho parasite (pas une panne)
+      # Clamp : rejette les valeurs hors plage physique capteur (zone aveugle <20 cm, hors portée >4 m)
+      # ignore_out_of_range: true permet de laisser passer NAN sans bloquer le pipeline
+      # DOIT être placé AVANT timeout pour que les mesures invalides ne réinitialisent pas le compteur
       - clamp:
           min_value: 0.20
           max_value: 4.00
           ignore_out_of_range: true
+      # Timeout : marque comme unavailable si aucune mesure valide pendant 60s
+      # Placé APRÈS clamp pour détecter correctement les pannes capteur
+      # (mesures hors plage continues ou absence de mesure → unavailable après 60s)
+      - timeout:
+          timeout: 60s
+          value: !lambda "return NAN;"
 
   # ---- 2. Niveau d'eau (%) ----
   - platform: template
